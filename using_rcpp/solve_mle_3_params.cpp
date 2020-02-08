@@ -46,7 +46,7 @@ Rcpp::NumericVector mle_solve_3param(Rcpp::List dat, int y_n, double t_w)
 	gsl_multiroot_fsolver *s;
 
 	gsl_multiroot_function f = {&loglik_f, np, &p};
-	double gev_init[2] = {0, log(0.5)};
+	double gev_init[2] = {0, log(0.25)};
 	gsl_vector *x = gsl_vector_alloc(np);
 
 	gsl_vector_set(x, 0, gev_init[0]);
@@ -61,7 +61,7 @@ Rcpp::NumericVector mle_solve_3param(Rcpp::List dat, int y_n, double t_w)
 		iter++;
 		status = gsl_multiroot_fsolver_iterate (s);
 
-		print_state (iter, s);
+		// print_state (iter, s);
 
 		if (status)
 			break;
