@@ -22,9 +22,10 @@ loglik_f (const gsl_vector * x, void * params, gsl_vector * f)
 	double *ft = ((struct rparams *) params)->ft;
 
 	const double u = gsl_vector_get(x, 0);
-	const double b = gsl_vector_get(x, 1);
+	const double log_b = gsl_vector_get(x, 1);
 
 	int i;
+	double b = exp(log_b);
 	double dfdu = 0, dfdb = 0;
 	for(i=0; i<r; i++)
 	{
@@ -35,7 +36,7 @@ loglik_f (const gsl_vector * x, void * params, gsl_vector * f)
 	dfdb += y_n * ( ((exp((t_c - u)/b)*exp(-exp((t_c - u)/b))*(t_c - u))/pow(b,2) - (exp((t_w - u)/b)*exp(-exp((t_w - u)/b))*(t_w - u))/pow(b,2))/(exp(-exp((t_c - u)/b)) - exp(-exp((t_w - u)/b))) );
 
 	dfdu += (n-r-y_n)*( exp((t_w - u)/b)/b );
-	dfdb += (n-r-y_n)*((exp((t_w - u)/b)*(t_w - u))/pow(b, 2));
+	dfdb += (n-r-y_n)*( (exp((t_w - u)/b)*(t_w - u))/pow(b, 2) );
 
 	gsl_vector_set (f, 0, dfdu);
 	gsl_vector_set (f, 1, dfdb);
