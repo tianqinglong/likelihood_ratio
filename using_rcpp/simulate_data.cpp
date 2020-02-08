@@ -58,5 +58,5 @@ List generate_censored_data(int r, double pf, double beta, double eta)
 //
 
 /*** R
-generate_censored_data(5, 0.2, 2, 1)
+
 */

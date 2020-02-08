@@ -99,7 +99,5 @@ Rcpp::NumericVector mle_solve_root(Rcpp::List dat)
 //
 
 /*** R
-Rcpp::sourceCpp("simulate_data.cpp")
-dat <- generate_censored_data(50, 0.1, 2, 1)
-mle_solve_root(dat)
+
 */
