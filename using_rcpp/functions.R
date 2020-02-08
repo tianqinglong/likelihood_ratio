@@ -1,6 +1,20 @@
 Rcpp::sourceCpp("simulate_data.cpp")
 Rcpp::sourceCpp("solve_mle_root.cpp")
+Rcpp::sourceCpp("solve_mle_optim_backup.cpp")
 Rcpp::sourceCpp("solve_mle_3_params.cpp")
+
+find_mle2_with_backup <- function(dat)
+{
+  mles <- mle_solve_root(dat)
+  
+  # if the root finding routine breaks down use the optimization
+  if(mles[1] < 0)
+  {
+    mles <- mle_solve_backup_2(dat)
+  }
+  
+  return (mles)
+}
 
 gn_loglik <- function(y_n, mles3, dat, t_w)
 {

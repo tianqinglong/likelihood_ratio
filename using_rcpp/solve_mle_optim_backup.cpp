@@ -71,23 +71,20 @@ Rcpp::NumericVector mle_solve_backup_2(Rcpp::List dat)
 
     	size = gsl_multimin_fminimizer_size (s);
     	status = gsl_multimin_test_size (size, 1e-2);
-
-    	if (status == GSL_SUCCESS)
-    	{
-    		printf ("convergence satisfied!\n");
-        }
-
-        // printf ("%5d %10.3e %10.3e f() = %7.3f size = %.3f\n",
-        // 	iter,
-        // 	exp(gsl_vector_get (s->x, 0)),
-        // 	exp(gsl_vector_get (s->x, 1)),
-        // 	s->fval, size);
     }
     while (status == GSL_CONTINUE && iter < 100);
 
     Rcpp::NumericVector MLEs (2);
-    MLEs[0] = exp(gsl_vector_get (s->x, 0));
-    MLEs[1] = exp(gsl_vector_get (s->x, 1));
+    if (status == GSL_SUCCESS)
+    {
+    	MLEs[0] = exp(gsl_vector_get (s->x, 0));
+    	MLEs[1] = exp(gsl_vector_get (s->x, 1));
+    }
+    else
+    {
+    	MLEs[0] = -1;
+    	MLEs[1] = -1;
+    }
 
     gsl_vector_free(x);
     gsl_vector_free(ss);
