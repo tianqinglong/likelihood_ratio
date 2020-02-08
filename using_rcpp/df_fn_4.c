@@ -18,7 +18,7 @@ my_f (const gsl_vector *v, void *params)
 	{
 		loglik += log(beta/eta*pow(ft[i]/eta, beta-1))-pow(ft[i]/eta, beta);
 	}
-	loglik += (n-r-y_n)*(-pow(t_c/eta, beta));
+	loglik += (n-r-y_n)*(-pow(t_w/eta, beta));
 	loglik += y_n * log(exp(-pow(t_c/eta, beta)) - exp(-pow(t_w/eta, beta)));
 
 	double negloglik = -loglik;

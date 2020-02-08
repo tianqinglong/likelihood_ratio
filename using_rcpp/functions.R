@@ -38,16 +38,24 @@ gd_loglik <- function(y_n, dat, mles)
 	ft <- dat[[3]]
 	n <- dat[[4]]
 
-	loglik <- sum( dweibull(ft, mles[1], mles[2], log = TRUE) )+
-		(n-r)*pweibull(t_c, mles[1], mles[2], lower.tail = FALSE, log.p = TRUE)+
-		y_n*log(y_n/(n-r))+(n-r-y_n)*log(1-y_n/(n-r))
+	if (y_n != 0 && y_n !=(n-r))
+	{
+		loglik <- sum( dweibull(ft, mles[1], mles[2], log = TRUE) )+
+			(n-r)*pweibull(t_c, mles[1], mles[2], lower.tail = FALSE, log.p = TRUE)+
+			y_n*log(y_n/(n-r))+(n-r-y_n)*log(1-y_n/(n-r))
+	}
+	else
+	{
+		loglik <- sum( dweibull(ft, mles[1], mles[2], log = TRUE) )+
+			(n-r)*pweibull(t_c, mles[1], mles[2], lower.tail = FALSE, log.p = TRUE)
+	}
 
 	return (loglik);
 }
 
 eval_y <- function(y_n, t_w, mles, dat)
 {
-	mles_3param <- mle_solve_3param(dat, y_n, t_w)
+	mles_3param <- mle_solve_3_params_backup(dat, y_n, t_w)
 	log_ratio <- -2*( gn_loglik(y_n, mles_3param, dat, t_w)-gd_loglik(y_n, dat, mles) )
 
 	return(log_ratio)
