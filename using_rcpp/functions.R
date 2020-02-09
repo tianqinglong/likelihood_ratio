@@ -60,3 +60,62 @@ eval_y <- function(y_n, t_w, mles, dat)
 
 	return(log_ratio)
 }
+
+find_mid <- function(p, dat, t_w, beta, eta)
+{
+  r <- dat[[1]]
+  t_c <- dat[[2]]
+  n <- dat[[4]]
+  mles <- find_mle2_with_backup(dat)
+  delta <- pweibull(t_w, beta, eta)-pweibull(t_c, beta, eta)
+  eF <- n*delta
+  qch <- qchisq(p, df = 1)
+  
+  if (eval_y(eF, t_w, mles, dat) < qch) {return(eF)}
+  
+  sample_points <- seq(from = 0, to = n-r, length.out = 8)
+  for (i in 1:length(sample_points))
+  {
+    x <- sample_points[i]
+    if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
+  }
+  
+  stop("error: cannot find mid point!")
+}
+
+solve_discrete_root <- function(p, lp, sp, dat, mles, t_w)
+{
+  mid <- round((lp+sp)/2)
+  
+  while(abs(lp-sp) > 1)
+  {
+    y_val <- eval_y(mid, t_w, mles, dat)
+    if(y_val > qchisq(p, df = 1))
+    {
+      lp <- mid
+    }
+    else
+    {
+      sp <- mid
+    }
+    
+    mid <- round((lp+sp)/2)
+  }
+  
+  return(lp)
+}
+
+lik_ratio_pred <- function(dat, t_w, beta, eta)
+{
+  r <- dat[[1]]
+  t_c <- dat[[2]]
+  n <- dat[[4]]
+  
+  mles <- find_mle2_with_backup(dat)
+  midpoint <- find_mid(p = 0.9, dat, t_w, beta, eta)
+  
+  lwb <- solve_discrete_root(0.9, 0, midpoint, dat, mles, t_w)
+  upb <- solve_discrete_root(0.9, n-r, midpoint, dat, mles, t_w)
+  
+  return(c(lwb, upb))
+}
