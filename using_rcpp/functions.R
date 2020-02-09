@@ -17,6 +17,7 @@ find_mle2_with_backup <- function(dat)
   return (mles)
 }
 
+# likelihood-ratio test
 gn_loglik <- function(y_n, mles3, dat, t_w)
 {
 	r <- dat[[1]]
@@ -162,4 +163,102 @@ lik_ratio_pred <- function(p, dat, t_w)
   upb <- solve_discrete_root(p, n-r, midpoint, dat, mles, t_w)
   
   return(c(lwb, upb))
+}
+
+# bootstrap and gpq
+bootstrap_sample <- function(mles, t_c, n)
+{
+  complete_data <- rweibull(n, mles[1], mles[2])
+  index <- complete_data < t_c
+  r <- sum(index)
+  if (r < 2)
+  {
+    return( bootstrap_sample(mles, t_c, n) )
+  }
+  ft <- complete_data[index]
+  return(list(Number_of_Failures = r, Censor_Time = t_c, Failure_Times = ft, Total_Number = n))
+}
+
+generate_bootstrap_draws <- function(dat,B = 1000)
+{
+  mles <- find_mle2_with_backup(dat)
+
+  list_mle_r <- lapply(1:B, function(x) {
+    bsample <- bootstrap_sample(mles, dat[[2]], dat[[4]])
+    return(list(MLEs = find_mle2_with_backup(bsample), R = bsample[[1]]))
+  })
+  
+  return(list_mle_r)
+}
+
+get_p_star <- function(list_mle_r, t_w, t_c)
+{
+  lapply(list_mle_r, function(x) {
+    compute_p(t_c, t_w, x$MLEs[1], x$MLEs[2])
+  }) -> p_array
+  
+  return(unlist(p_array))
+}
+
+get_p_starstar <- function(list_mle_r, mles, t_w, t_c)
+{
+  lapply(list_mle_r, function(x) {
+    compute_p_starstar(mles[1], mles[2], x$MLEs[1], x$MLEs[2], t_c, t_w)
+  }) -> pp_array
+  
+  return(unlist(pp_array))
+}
+
+boot_solve_discrete <- function(p, p_array, n)
+{
+  lp <- 0
+  up <- n
+  
+  if(pred_dist(lp, p_array, n) >= p)
+  {
+    return(lp)
+  }
+  if(pred_dist(up, p_array, n) <= p)
+  {
+    return(up)
+  }
+  
+  mid <- (lp+up)/2
+  while(abs(lp-up)>1)
+  {
+    pmid <- pred_dist(mid, p_array, n)
+    if (pmid < p)
+    {
+      lp <- mid
+    }
+    else if(pmid > p)
+    {
+      up <- mid
+    }
+    else if(abs(pmid-p) <= 1e-5)
+    {
+      return(mid)
+    }
+    
+    mid <- round((lp+up)/2)
+  }
+  
+  pred <- ifelse(p>0.5, lp, max(lp-1, 0))
+  
+  return(lp)
+}
+
+bootstrap_and_GPQ_and_calibration_pred <- function(p, dat, t_w)
+{
+  t_c <- dat$Censor_Time
+  mles <- find_mle2_with_backup(dat)
+  list_mle_r <- generate_bootstrap_draws(dat)
+  
+  p_ast <- get_p_star(list_mle_r, t_w, t_c)
+  p_astast <- get_p_starstar(list_mle_r, mles, t_w, t_c)
+  
+  bp <- boot_solve_discrete(p, p_ast, dat[[4]]-dat[[1]])
+  gp <- boot_solve_discrete(p, p_astast, dat[[4]]-dat[[1]])
+  
+  return(c(bp, gp))
 }
