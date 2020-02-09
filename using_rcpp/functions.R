@@ -248,17 +248,96 @@ boot_solve_discrete <- function(p, p_array, n)
   return(lp)
 }
 
-bootstrap_and_GPQ_and_calibration_pred <- function(p, dat, t_w)
+# calibration method
+pred_root_empirical <- function(list_mles_r, mles, t_c, t_w, n)
 {
+  phat <- compute_p(t_c, t_w, mles[1], mles[2])
+  sapply(list_mles_r, function(x) {
+    
+    p_star <- compute_p(t_c, t_w, x$MLEs[1], x$MLEs[2])
+    ystar <- rbinom(25, n-x$R, phat)
+    u_array <- pbinom(ystar, n-x$R, p_star)
+    
+    return(u_array)
+  }) -> u_emp
+  
+  four_quantile <- quantile(u_emp, probs = c(0.05, 0.1, 0.9, 0.95))
+  
+  return(four_quantile)
+}
+
+compute_cp <- function(pb, t_c, t_w, beta, eta, n, r)
+# four bounds
+{
+  p <- (pweibull(t_w, beta, eta)-pweibull(t_c, beta, eta))/
+    pweibull(t_c, beta, eta, lower.tail = F)
+  cp1 <- pbinom(pb[1], n-r, p, lower.tail = F)+dbinom(pb[1], n-r, p)
+  cp2 <- pbinom(pb[2], n-r, p, lower.tail = F)+dbinom(pb[2], n-r, p)
+  cp3 <- pbinom(pb[3], n-r, p)
+  cp4 <- pbinom(pb[4], n-r, p)
+  
+  return(c(cp1, cp2, cp3, cp4))
+}
+
+pb2cp <- function(pb_mat, t_c, t_w, beta, eta, n, r)
+{
+  cp_mat <- matrix(nrow = 4, ncol = 4)
+  rownames(cp_mat) <- c("Ratio", "Bootstrap", "GPQ", "Calibration")
+  colnames(cp_mat) <- c("Lower95", "Lower90", "Upper90", "Upper95")
+  
+  cp_mat[1,] <- compute_cp(pb_mat[1,], t_c, t_w, beta, eta, n, r)
+  cp_mat[2,] <- compute_cp(pb_mat[2,], t_c, t_w, beta, eta, n, r)
+  cp_mat[3,] <- compute_cp(pb_mat[3,], t_c, t_w, beta, eta, n, r)
+  cp_mat[4,] <- compute_cp(pb_mat[4,], t_c, t_w, beta, eta, n, r)
+  
+  return(cp_mat)
+}
+
+# predictions using four methods
+prediction_four_methods <- function(dat, t_w, beta, eta)
+{
+  n <- dat$Total_Number
+  r <- dat$Number_of_Failures
   t_c <- dat$Censor_Time
   mles <- find_mle2_with_backup(dat)
-  list_mle_r <- generate_bootstrap_draws(dat)
+  list_mles_r <- generate_bootstrap_draws(dat)
+  p_ast <- get_p_star(list_mles_r, t_w, t_c)
+  p_astast <- get_p_starstar(list_mles_r, mles, t_w, t_c)
   
-  p_ast <- get_p_star(list_mle_r, t_w, t_c)
-  p_astast <- get_p_starstar(list_mle_r, mles, t_w, t_c)
+  pb_mat <- matrix(nrow = 4, ncol = 4)
   
-  bp <- boot_solve_discrete(p, p_ast, dat[[4]]-dat[[1]])
-  gp <- boot_solve_discrete(p, p_astast, dat[[4]]-dat[[1]])
+  rownames(pb_mat) <- c("Ratio", "Bootstrap", "GPQ", "Calibration")
+  colnames(pb_mat) <- c("Lower95", "Lower90", "Upper90", "Upper95")
+
+  # likelihood ratio based prediction
+  LU95 <- lik_ratio_pred(0.9, dat, t_w)
+  LU90 <- lik_ratio_pred(0.8, dat, t_w)
+  pb_mat[1, c(1, 4)] <- LU95
+  pb_mat[1, c(2, 3)] <- LU90
   
-  return(c(bp, gp))
+  # bootstrap
+  L95 <- boot_solve_discrete(0.05, p_ast, n-r)
+  L90 <- boot_solve_discrete(0.1, p_ast, n-r)
+  U90 <- boot_solve_discrete(0.9, p_ast, n-r)
+  U95 <- boot_solve_discrete(0.95, p_ast, n-r)
+  pb_mat[2,] <- c(L95, L90, U90, U95)
+  
+  # gpq
+  L95 <- boot_solve_discrete(0.05, p_astast, n-r)
+  L90 <- boot_solve_discrete(0.1, p_astast, n-r)
+  U90 <- boot_solve_discrete(0.9, p_astast, n-r)
+  U95 <- boot_solve_discrete(0.95, p_astast, n-r)
+  pb_mat[3,] <- c(L95, L90, U90, U95)
+  
+  # calibration
+  alpha_cali <- pred_root_empirical(list_mles_r, mles, t_c, t_w, n)
+  cap <- qbinom(alpha_cali, n-r, compute_p(t_c, t_w, mles[1], mles[2]))
+  cap[1] <- max(0, cap[1]-1)
+  cap[2] <- max(0, cap[2]-1)
+  pb_mat[4,] <- cap
+  
+  cp_mat <- pb2cp(pb_mat, t_c, t_w, beta, eta, n, r)
+  
+  return(list(Prediction_Bounds = pb_mat, Coverage_Probability = cp_mat))
 }
+
