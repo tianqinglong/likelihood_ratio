@@ -144,7 +144,9 @@ solve_discrete_root <- function(p, lp, sp, dat, mles, t_w)
     mid <- round((lp+sp)/2)
   }
   
-  return(lp)
+  pred <- ifelse(lp < sp, mid, mid+1)
+  
+  return(pred)
 }
 
 lik_ratio_pred <- function(p, dat, t_w)
