@@ -78,7 +78,7 @@ find_mid <- function(p, dat, t_w)
   n <- dat[[4]]
   mles <- find_mle2_with_backup(dat)
   delta <- pweibull(t_w, mles[1], mles[2])-pweibull(t_c, mles[1], mles[2])
-  eF <- n*delta
+  eF <- round(n*delta)
   qch <- qchisq(p, df = 1)
   
   if (eval_y(eF, t_w, mles, dat) < qch) {return(eF)}
@@ -251,7 +251,7 @@ boot_solve_discrete <- function(p, p_array, n)
     return(up)
   }
   
-  mid <- round(lp+up)/2
+  mid <- round((lp+up)/2)
   while(abs(lp-up)>1)
   {
     pmid <- pred_dist(mid, p_array, n)

@@ -10,7 +10,7 @@ delta <- as.numeric(args[3])
 r <- as.numeric(args[4])
 
 # unchanged parameters
-N <- 2000
+N <- 300
 eta <- 1
 
 dat_list <- lapply(1:N, function(x)
