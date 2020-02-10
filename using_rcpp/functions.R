@@ -4,6 +4,15 @@ Rcpp::sourceCpp("solve_mle_optim_backup.cpp")
 Rcpp::sourceCpp("solve_mle_3_params.cpp")
 Rcpp::sourceCpp("solve_mle_3_params_optim_backup.cpp")
 
+compute_p <- function(t_c, t_w, beta, eta){
+  cond_p <- (pweibull(t_w, beta, eta)-pweibull(t_c, beta, eta))/(1-pweibull(t_c, beta, eta))
+  if(is.na(cond_p))
+  {
+    cond_p <- 1
+  }
+  return(cond_p)
+}
+
 find_mle2_with_backup <- function(dat)
 {
   mles <- mle_solve_root(dat)
@@ -193,20 +202,39 @@ generate_bootstrap_draws <- function(dat,B = 1000)
 
 get_p_star <- function(list_mle_r, t_w, t_c)
 {
-  lapply(list_mle_r, function(x) {
-    compute_p(t_c, t_w, x$MLEs[1], x$MLEs[2])
-  }) -> p_array
+  p_array <- numeric(length(list_mle_r))
+  for(i in 1:length(list_mle_r))
+  {
+    mle_r <- list_mle_r[[i]]
+    MLE <- mle_r[[1]]
+    
+    p_array[i] <- compute_p(t_c, t_w, MLE[1], MLE[2])
+  }
   
-  return(unlist(p_array))
+  return(p_array)
 }
 
-get_p_starstar <- function(list_mle_r, mles, t_w, t_c)
+get_p_starstar <- function(list_mle_r, MLEs, t_w, t_c)
 {
-  lapply(list_mle_r, function(x) {
-    compute_p_starstar(mles[1], mles[2], x$MLEs[1], x$MLEs[2], t_c, t_w)
-  }) -> pp_array
+  p_array <- numeric(length(list_mle_r))
+  for(i in 1:length(list_mle_r))
+  {
+    mle_r <- list_mle_r[[i]]
+    BT_MLEs <- mle_r[[1]]
+    
+    MLE_mu <- log (MLEs[[2]])
+    MLE_sigma <- 1/MLEs[[1]]
+    
+    BT_mu <- log (BT_MLEs[[2]])
+    BT_sigma <- 1/BT_MLEs[[1]]
+    
+    GPQ_Beta <- 1 / ( MLE_sigma*MLE_sigma / BT_sigma )
+    GPQ_Eta <- exp( MLE_mu + (MLE_mu - BT_mu)/BT_sigma*MLE_sigma )
+    
+    p_array[i] <- compute_p(t_c, t_w, GPQ_Beta, GPQ_Eta)
+  }
   
-  return(unlist(pp_array))
+  return(p_array)
 }
 
 boot_solve_discrete <- function(p, p_array, n)
@@ -223,7 +251,7 @@ boot_solve_discrete <- function(p, p_array, n)
     return(up)
   }
   
-  mid <- (lp+up)/2
+  mid <- round(lp+up)/2
   while(abs(lp-up)>1)
   {
     pmid <- pred_dist(mid, p_array, n)
@@ -257,9 +285,10 @@ pred_root_empirical <- function(list_mles_r, mles, t_c, t_w, n)
     p_star <- compute_p(t_c, t_w, x$MLEs[1], x$MLEs[2])
     ystar <- rbinom(25, n-x$R, phat)
     u_array <- pbinom(ystar, n-x$R, p_star)
-    
+
     return(u_array)
   }) -> u_emp
+  u_emp <- as.vector(u_emp)
   
   four_quantile <- quantile(u_emp, probs = c(0.05, 0.1, 0.9, 0.95))
   
@@ -321,14 +350,14 @@ prediction_four_methods <- function(dat, t_w, beta, eta)
   U90 <- boot_solve_discrete(0.9, p_ast, n-r)
   U95 <- boot_solve_discrete(0.95, p_ast, n-r)
   pb_mat[2,] <- c(L95, L90, U90, U95)
-  
+
   # gpq
   L95 <- boot_solve_discrete(0.05, p_astast, n-r)
   L90 <- boot_solve_discrete(0.1, p_astast, n-r)
   U90 <- boot_solve_discrete(0.9, p_astast, n-r)
   U95 <- boot_solve_discrete(0.95, p_astast, n-r)
   pb_mat[3,] <- c(L95, L90, U90, U95)
-  
+
   # calibration
   alpha_cali <- pred_root_empirical(list_mles_r, mles, t_c, t_w, n)
   cap <- qbinom(alpha_cali, n-r, compute_p(t_c, t_w, mles[1], mles[2]))
