@@ -33,6 +33,9 @@ for (i in 1:num_y)
 #
 ratio_emp <- generate_ratio_array(mles, t_c, t_w, n, num_per_sample = 30, B = 3000)
 qt <- quantile(ratio_emp, probs = c(0.8,0.9))
+qch <- qt[1];
+mid <- find_mid_boot(qch, dat, t_w)
+solve_discrete_root_boot(qch, 0, mid, dat, mles, t_w)
 
 # find the 95% and 90% prediction interval
 lik_ratio_pred(0.9, dat, t_w)
@@ -48,3 +51,14 @@ list_mles_r <- generate_bootstrap_draws(dat)
 p_ast <- get_p_star(list_mles_r, t_w, t_c)
 p_astast <- get_p_starstar(list_mles_r, mles, t_w, t_c)
 boot_solve_discrete(0.05, p_ast, n-r)
+
+t0 <- Sys.time()
+Er <- 5
+pf1 <- 0.01
+beta <- 4
+eta <- 1
+pf2 <- 0.05
+dat <- generate_censored_data(Er, pf1, beta, eta)
+t_w <- qweibull(pf2, beta, eta)
+prediction_five_methods(dat, t_w, 2, 1)
+Sys.time() - t0

@@ -420,14 +420,14 @@ compute_cp <- function(pb, t_c, t_w, beta, eta, n, r)
 
 pb2cp <- function(pb_mat, t_c, t_w, beta, eta, n, r)
 {
-  cp_mat <- matrix(nrow = 4, ncol = 4)
-  rownames(cp_mat) <- c("Ratio", "Bootstrap", "GPQ", "Calibration")
-  colnames(cp_mat) <- c("Lower95", "Lower90", "Upper90", "Upper95")
+  cp_mat <- matrix(nrow = nrow(pb_mat), ncol = 4)
+  rownames(cp_mat) <- rownames(pb_mat)
+  colnames(cp_mat) <- colnames(pb_mat)
   
-  cp_mat[1,] <- compute_cp(pb_mat[1,], t_c, t_w, beta, eta, n, r)
-  cp_mat[2,] <- compute_cp(pb_mat[2,], t_c, t_w, beta, eta, n, r)
-  cp_mat[3,] <- compute_cp(pb_mat[3,], t_c, t_w, beta, eta, n, r)
-  cp_mat[4,] <- compute_cp(pb_mat[4,], t_c, t_w, beta, eta, n, r)
+  for(i in 1:nrow(pb_mat))
+  {
+    cp_mat[i,] <- compute_cp(pb_mat[i,], t_c, t_w, beta, eta, n, r)
+  }
   
   return(cp_mat)
 }
@@ -480,3 +480,53 @@ prediction_four_methods <- function(dat, t_w, beta, eta)
   return(list(Prediction_Bounds = pb_mat, Coverage_Probability = cp_mat))
 }
 
+# add the calibrated likelihood method
+prediction_five_methods <- function(dat, t_w, beta, eta)
+{
+  n <- dat$Total_Number
+  r <- dat$Number_of_Failures
+  t_c <- dat$Censor_Time
+  mles <- find_mle2_with_backup(dat)
+  list_mles_r <- generate_bootstrap_draws(dat)
+  p_ast <- get_p_star(list_mles_r, t_w, t_c)
+  p_astast <- get_p_starstar(list_mles_r, mles, t_w, t_c)
+  
+  pb_mat <- matrix(nrow = 5, ncol = 4)
+  
+  rownames(pb_mat) <- c("Ratio", "Bootstrap", "GPQ", "Calibration", "Calibrated-Ratio")
+  colnames(pb_mat) <- c("Lower95", "Lower90", "Upper90", "Upper95")
+
+  # likelihood ratio based prediction
+  LU95 <- lik_ratio_pred(0.9, dat, t_w)
+  LU90 <- lik_ratio_pred(0.8, dat, t_w)
+  pb_mat[1, c(1, 4)] <- LU95
+  pb_mat[1, c(2, 3)] <- LU90
+  
+  # bootstrap
+  L95 <- boot_solve_discrete(0.05, p_ast, n-r)
+  L90 <- boot_solve_discrete(0.1, p_ast, n-r)
+  U90 <- boot_solve_discrete(0.9, p_ast, n-r)
+  U95 <- boot_solve_discrete(0.95, p_ast, n-r)
+  pb_mat[2,] <- c(L95, L90, U90, U95)
+
+  # gpq
+  L95 <- boot_solve_discrete(0.05, p_astast, n-r)
+  L90 <- boot_solve_discrete(0.1, p_astast, n-r)
+  U90 <- boot_solve_discrete(0.9, p_astast, n-r)
+  U95 <- boot_solve_discrete(0.95, p_astast, n-r)
+  pb_mat[3,] <- c(L95, L90, U90, U95)
+
+  # calibration
+  alpha_cali <- pred_root_empirical(list_mles_r, mles, t_c, t_w, n)
+  cap <- qbinom(alpha_cali, n-r, compute_p(t_c, t_w, mles[1], mles[2]))
+  cap[1] <- max(0, cap[1]-1)
+  cap[2] <- max(0, cap[2]-1)
+  pb_mat[4,] <- cap
+  
+  # calibrated-likelihood ratio
+  pb_mat[5,] <- lik_ratio_pred_boot(dat, t_w)
+
+  cp_mat <- pb2cp(pb_mat, t_c, t_w, beta, eta, n, r)
+  
+  return(list(Prediction_Bounds = pb_mat, Coverage_Probability = cp_mat))
+}
