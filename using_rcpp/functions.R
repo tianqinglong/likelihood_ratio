@@ -78,7 +78,7 @@ find_mid <- function(p, dat, t_w)
   n <- dat[[4]]
   mles <- find_mle2_with_backup(dat)
   delta <- pweibull(t_w, mles[1], mles[2])-pweibull(t_c, mles[1], mles[2])
-  eF <- round(n*delta)
+  eF <- round(n*delta); eF <- max(1, eF); eF <- min(n-r-1, eF)
   qch <- qchisq(p, df = 1)
   
   if (eval_y(eF, t_w, mles, dat) < qch) {return(eF)}
