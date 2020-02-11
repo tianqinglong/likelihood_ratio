@@ -4,15 +4,35 @@ r <- 30
 pf1 <- 0.1
 beta <- 2
 eta <- 1
+n <- r/pf1
 
 pf2 <- 0.2
+t_c <- qweibull(pf1, beta, eta)
 t_w <- qweibull(pf2, beta, eta)
 
 # simulate dataset
 dat <- generate_censored_data(r, pf1, beta, eta)
+mles <- find_mle2_with_backup(dat)
 
 # find MLEs
-(mles <- find_mle2_with_backup(dat))
+B <- 300
+num_y <- 20
+list_bootstrap_samples <- lapply(1:B, function(x) {bootstrap_sample(mles, t_c, n)})
+
+# for a single bootstrap sample
+bs <- list_bootstrap_samples[[1]]
+r_star <- bs$Number_of_Failures
+y_array <- generate_y_n(r_star, n, t_c, t_w, mles[1], mles[2], num_y)
+eval_y_array <- double(length = num_y)
+for (i in 1:num_y)
+{
+  mles_star <- find_mle2_with_backup(bs)
+  eval_y_array[i] <- eval_y(y_array[i], t_w, mles_star, bs)
+}
+
+#
+ratio_emp <- generate_ratio_array(mles, t_c, t_w, n, num_per_sample = 30, B = 3000)
+qt <- quantile(ratio_emp, probs = c(0.8,0.9))
 
 # find the 95% and 90% prediction interval
 lik_ratio_pred(0.9, dat, t_w)

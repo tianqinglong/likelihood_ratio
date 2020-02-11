@@ -174,19 +174,19 @@ lik_ratio_pred <- function(p, dat, t_w)
   return(c(lwb, upb))
 }
 
-# bootstrap and gpq
-bootstrap_sample <- function(mles, t_c, n)
-{
-  complete_data <- rweibull(n, mles[1], mles[2])
-  index <- complete_data < t_c
-  r <- sum(index)
-  if (r < 2)
-  {
-    return( bootstrap_sample(mles, t_c, n) )
-  }
-  ft <- complete_data[index]
-  return(list(Number_of_Failures = r, Censor_Time = t_c, Failure_Times = ft, Total_Number = n))
-}
+# # bootstrap and gpq
+# bootstrap_sample <- function(mles, t_c, n)
+# {
+#   complete_data <- rweibull(n, mles[1], mles[2])
+#   index <- complete_data < t_c
+#   r <- sum(index)
+#   if (r < 2)
+#   {
+#     return( bootstrap_sample(mles, t_c, n) )
+#   }
+#   ft <- complete_data[index]
+#   return(list(Number_of_Failures = r, Censor_Time = t_c, Failure_Times = ft, Total_Number = n))
+# }
 
 generate_bootstrap_draws <- function(dat,B = 1500)
 {
@@ -274,6 +274,116 @@ boot_solve_discrete <- function(p, p_array, n)
   pred <- ifelse(p>0.5, lp, max(lp-1, 0))
   
   return(lp)
+}
+
+# likelihood ratio + bootstrap
+generate_ratio_array <- function(mles, t_c, t_w, n, num_per_sample = 30, B = 2000)
+{
+  list_bootstrap_samples <- lapply(1:B, function(x) {bootstrap_sample(mles, t_c, n)})
+  sapply(list_bootstrap_samples, function(x){
+      r_star <- x$Number_of_Failures
+      y_array <- generate_y_n(r_star, n, t_c, t_w, mles[1], mles[2], num_per_sample)
+      mles_star <- find_mle2_with_backup(x)
+
+      eval_y_array <- double(length = num_per_sample)
+      for (i in 1:num_per_sample)
+      {
+        eval_y_array[i] <- eval_y(y_array[i], t_w, mles_star, x)
+      }
+      return(eval_y_array)
+    }) -> ratio_emp
+
+  return(as.vector(ratio_emp))
+}
+
+find_mid_boot <- function(qch, dat, t_w)
+{
+  r <- dat[[1]]
+  t_c <- dat[[2]]
+  n <- dat[[4]]
+  mles <- find_mle2_with_backup(dat)
+  delta <- pweibull(t_w, mles[1], mles[2])-pweibull(t_c, mles[1], mles[2])
+  eF <- round(n*delta); eF <- max(eF, 0); eF <- min(eF, n-r)
+  
+  if (eval_y(eF, t_w, mles, dat) < qch) {return(eF)}
+  
+  sample_points <- seq(from = 0, to = n-r, length.out = min(5, n-r))
+  for (i in 1:length(sample_points[c(-1, -5)]))
+  {
+    x <- sample_points[i]
+    if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
+  }
+
+  sample_points <- seq(from = 0, to = n-r, length.out = min(20, n-r))
+  for (i in 1:length(sample_points[c(-1, -20)]))
+  {
+    x <- sample_points[i]
+    if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
+  }
+
+  sample_points <- seq(from = 0, to = n-r, length.out = min(100, n-r))
+  for (i in 1:length(sample_points[c(-1, -50)]))
+  {
+    x <- sample_points[i]
+    if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
+  }
+
+  sample_points <- seq(from = 0, to = n-r, length.out = min(500, n-r))
+  for (i in 1:length(sample_points[c(-1, -1000)]))
+  {
+    x <- sample_points[i]
+    if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
+  }
+
+  stop("cannot find mid point!")
+}
+
+solve_discrete_root_boot <- function(qch, lp, sp, dat, mles, t_w)
+{
+  mid <- round((lp+sp)/2)
+  
+  while(abs(lp-sp) > 1)
+  {
+    y_val <- eval_y(mid, t_w, mles, dat)
+    if(y_val > qch)
+    {
+      lp <- mid
+    }
+    else
+    {
+      sp <- mid
+    }
+    
+    mid <- round((lp+sp)/2)
+  }
+  
+  pred <- ifelse(lp < sp, mid, mid+1)
+  
+  return(pred)
+}
+
+lik_ratio_pred_boot <- function(dat, t_w)
+# default 90% 95% prediction bonuds
+{
+  r <- dat[[1]]
+  t_c <- dat[[2]]
+  n <- dat[[4]]
+
+  mles <- find_mle2_with_backup(dat)
+  ratio_emp <- generate_ratio_array(mles, t_c, t_w, n, 50, 5000)
+  qt <- quantile(ratio_emp, probs = c(0.8, 0.9))
+
+  qch <- qt[1]
+  mid <- find_mid_boot(qch, dat, t_w)
+  L90 <- solve_discrete_root_boot(qch, 0, mid, dat, mles, t_w)
+  U90 <- solve_discrete_root_boot(qch, n-r, mid, dat, mles, t_w)
+
+  qch <- qt[2]
+  mid <- find_mid_boot(qch, dat, t_w)
+  L95 <- solve_discrete_root_boot(qch, 0, mid, dat, mles, t_w)
+  U95 <- solve_discrete_root_boot(qch, n-r, mid, dat, mles, t_w)
+
+  return(c(L95, L90, U90, U95))
 }
 
 # calibration method
