@@ -8,6 +8,8 @@ print_state (int iter, gsl_multiroot_fsolver * s)
           gsl_vector_get (s->x, 1),
           gsl_vector_get (s->f, 0),
           gsl_vector_get (s->f, 1));
+
+  return 0;
 }
 
 int

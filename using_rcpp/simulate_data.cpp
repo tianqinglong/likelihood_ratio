@@ -52,6 +52,38 @@ List generate_censored_data(int r, double pf, double beta, double eta)
   return L;
 }
 
+// [[Rcpp::export]]
+List bootstrap_sample(NumericVector mles, double t_c, int n)
+{
+  double beta = mles[0], eta = mles[1];
+  NumericVector boot_sample = rweibull(n, beta, eta), censored = {};
+  int i, r = 0;
+  for (i=0; i<boot_sample.length(); i++)
+  {
+    if (boot_sample[i] <= t_c)
+    {
+      r++;
+      censored.push_back(boot_sample[i]);
+    }
+  }
+
+  if (r<2)
+  {
+    return bootstrap_sample(mles, t_c, n);
+  }
+
+  List L = List::create(_["Number_of_Failures"] = r, _["Censor_Time"] = t_c, _["Failure_Times"] = censored, _["Total_Number"] = n);
+  return L;
+}
+
+// [[Rcpp::export]]
+NumericVector generate_y_n(int r, int n, double t_c, double t_w, double beta_used, double eta_used, int number_of_y_n)
+{
+  double p = (R::pweibull(t_w, beta_used, eta_used, true, false)-R::pweibull(t_c, beta_used, eta_used, true, false))/R::pweibull(t_c, beta_used, eta_used, false, false);
+  NumericVector y_n = Rcpp::rbinom(number_of_y_n, n-r, p);
+
+  return y_n;
+}
 
 // double compute_p(double t_c, double t_w, double beta, double eta)
 // {
