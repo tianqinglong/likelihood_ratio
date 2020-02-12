@@ -83,55 +83,13 @@ find_mid <- function(p, dat, t_w)
   
   if (eval_y(eF, t_w, mles, dat) < qch) {return(eF)}
   
-  sample_points <- seq(from = 0, to = n-r, length.out = min(5, n-r))
-  for (i in 1:length(sample_points[c(-1, -5)]))
+  sample_points <- round(seq(from = 0, to = n-r, length.out = min(20, n-r)))
+  for (i in 1:length(sample_points[c(-1, -10)]))
   {
     x <- sample_points[i]
     if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
   }
-
-  sample_points <- seq(from = 0, to = n-r, length.out = min(20, n-r))
-  for (i in 1:length(sample_points[c(-1, -20)]))
-  {
-  	x <- sample_points[i]
-  	if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
-  }
-
-  sample_points <- seq(from = 0, to = n-r, length.out = min(50, n-r))
-  for (i in 1:length(sample_points[c(-1, -50)]))
-  {
-	  x <- sample_points[i]
-	  if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
-  }
-
-  sample_points <- seq(from = 0, to = n-r, length.out = min(100, n-r))
-  for (i in 1:length(sample_points[c(-1, -100)]))
-  {
-	  x <- sample_points[i]
-	  if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
-  }
-
-  sample_points <- seq(from = 0, to = n-r, length.out = min(200, n-r))
-  for (i in 1:length(sample_points[c(-1, -200)]))
-  {
-	  x <- sample_points[i]
-	  if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
-  }
-
-  sample_points <- seq(from = 0, to = n-r, length.out = min(500, n-r))
-  for (i in 1:length(sample_points[c(-1, -500)]))
-  {
-	  x <- sample_points[i]
-	  if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
-  }
-
-  sample_points <- seq(from = 0, to = n-r, length.out = min(1000, n-r))
-  for (i in 1:length(sample_points[c(-1, -1000)]))
-  {
-	  x <- sample_points[i]
-	  if (eval_y(x, t_w, mles, dat) < qch) {return(x)}
-  }
-
+  
   stop("cannot find mid point!")
 }
 
