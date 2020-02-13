@@ -155,7 +155,7 @@ lik_ratio_pred <- function(p, dat, t_w)
   return(c(lwb, upb))
 }
 
-generate_bootstrap_draws <- function(dat,B = 5000)
+generate_bootstrap_draws <- function(dat,B = 10000)
 {
   mles <- find_mle2_with_backup(dat)
 
@@ -189,6 +189,7 @@ get_p_star <- function(list_mle_r, t_w, t_c)
     p_array[i] <- compute_p(t_c, t_w, MLE[1], MLE[2])
   }
   
+  p_array[p_array > 1] <- 1
   return(p_array)
 }
 
@@ -212,6 +213,7 @@ get_p_starstar <- function(list_mle_r, MLEs, t_w, t_c)
     p_array[i] <- compute_p(t_c, t_w, GPQ_Beta, GPQ_Eta)
   }
   
+  p_array[p_array > 1] <- 1
   return(p_array)
 }
 
@@ -269,7 +271,7 @@ generate_ratio_array <- function(mles, t_c, t_w, n, list_mles_r, num_per_sample)
   return(as.vector(ratio_emp))
 }
 
-lik_ratio_pred_boot <- function(dat, t_w, list_mles_r, num_of_samples = 30)
+lik_ratio_pred_boot <- function(dat, t_w, list_mles_r, num_of_samples = 50)
 # default 90% 95% prediction bonuds
 {
   r <- dat[[1]]
@@ -298,6 +300,10 @@ pred_root_empirical <- function(list_mles_r, mles, t_c, t_w, n, num_per_sample =
 	phat <- compute_p(t_c, t_w, mles[1], mles[2])
 	sapply(list_mles_r, function(x) {
 		p_star <- compute_p(t_c, t_w, x$MLEs[1], x$MLEs[2])
+
+    p_star <- ifelse(p_star > 1, 1, p_star)
+    p_star <- ifelse(p_star < 0, 0, p_star)
+
 		ystar <- rbinom(num_per_sample, n-x$R, phat)
 		u_array <- pbinom(ystar, n-x$R, p_star)
 
