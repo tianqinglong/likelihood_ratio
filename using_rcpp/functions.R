@@ -241,7 +241,7 @@ boot_solve_discrete <- function(p, p_array, n)
     {
       up <- mid
     }
-    mid <- ceilings((lp+up)/2)
+    mid <- ceiling((lp+up)/2)
   }
   pred <- ifelse(p>0.5, up, lp)
   
@@ -281,13 +281,13 @@ lik_ratio_pred_boot <- function(dat, t_w, list_mles_r, num_of_samples = 30)
 
   qt <- quantile(ratio_emp, probs = c(0.8, 0.9))
   qch <- qt[1]
-  mid <- find_mid_boot(qch, dat, t_w)
-  L90 <- solve_discrete_root_boot(qch, 0, mid, dat, mles, t_w)
-  U90 <- solve_discrete_root_boot(qch, n-r, mid, dat, mles, t_w)
+  mid <- find_mid(qch, dat, t_w)
+  L90 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
+  U90 <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
   qch <- qt[2]
-  mid <- find_mid_boot(qch, dat, t_w)
-  L95 <- solve_discrete_root_boot(qch, 0, mid, dat, mles, t_w)
-  U95 <- solve_discrete_root_boot(qch, n-r, mid, dat, mles, t_w)
+  mid <- find_mid(qch, dat, t_w)
+  L95 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
+  U95 <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
 
   return(c(L95, L90, U90, U95))
 }
@@ -427,7 +427,7 @@ prediction_five_methods <- function(dat, t_w, beta, eta)
   pb_mat[4,] <- cap
   
   # calibrated-likelihood ratio
-  pb_mat[5,] <- lik_ratio_pred_boot(dat, t_w)
+  pb_mat[5,] <- lik_ratio_pred_boot(dat, t_w, list_mles_r)
 
   cp_mat <- pb2cp(pb_mat, t_c, t_w, beta, eta, n, r)
   
