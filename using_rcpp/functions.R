@@ -14,7 +14,7 @@ find_mle2_with_backup <- function(dat)
   mles <- mle_solve_root(dat)
   
   # if the root finding routine breaks down use the optimization
-  if(mles[1] < 0)
+  if(mles[1] < 1e-6 || mles[2] < 1e-6 || mles[1] > 20 || mles[2] > 20)
   {
     mles <- mle_solve_backup_2(dat)
   }
@@ -155,7 +155,7 @@ lik_ratio_pred <- function(p, dat, t_w)
   return(c(lwb, upb))
 }
 
-generate_bootstrap_draws <- function(dat,B = 4000)
+generate_bootstrap_draws <- function(dat,B = 5000)
 {
   mles <- find_mle2_with_backup(dat)
 
