@@ -188,7 +188,7 @@ lik_ratio_pred <- function(p, dat, t_w)
 #   return(list(Number_of_Failures = r, Censor_Time = t_c, Failure_Times = ft, Total_Number = n))
 # }
 
-generate_bootstrap_draws <- function(dat,B = 1500)
+generate_bootstrap_draws <- function(dat,B = 5000)
 {
   mles <- find_mle2_with_backup(dat)
 
