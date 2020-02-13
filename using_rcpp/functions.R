@@ -291,7 +291,21 @@ lik_ratio_pred_boot <- function(dat, t_w, list_mles_r, num_of_samples = 50)
   L95 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
   U95 <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
 
-  return(c(L95, L90, U90, U95))
+  return(list(bounds = c(L95, L90, U90, U95), emean = mean(ratio_emp)))
+}
+
+# Bartlett Corrections
+
+lik_ratio_pred_bartlett_correct <- function(p, dat, t_w, emean)
+{
+  r <- dat[[1]]
+  n <- dat[[4]]
+  qch <- emean * qchisq(p, df = 1)
+  mid <- find_mid(qch, dat, t_w)
+  LB <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
+  UB <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
+
+  return(c(LB, UB))
 }
 
 # calibration method
@@ -360,8 +374,10 @@ prediction_four_methods <- function(dat, t_w, beta, eta)
   colnames(pb_mat) <- c("Lower95", "Lower90", "Upper90", "Upper95")
 
   # likelihood ratio based prediction
-  pb_mat[1, c(1, 4)] <- lik_ratio_pred(0.9, dat, t_w)
-  pb_mat[1, c(2, 3)] <- lik_ratio_pred(0.8, dat, t_w)
+  LU95 <- lik_ratio_pred(0.9, dat, t_w)
+  LU90 <- lik_ratio_pred(0.8, dat, t_w)
+  pb_mat[1, c(1, 4)] <- LU95
+  pb_mat[1, c(2, 3)] <- LU90
   
   # bootstrap
   L95 <- boot_solve_discrete(0.05, p_ast, n-r)
@@ -390,26 +406,24 @@ prediction_four_methods <- function(dat, t_w, beta, eta)
 }
 
 # add the calibrated likelihood method
-prediction_five_methods <- function(dat, t_w, beta, eta)
+prediction_six_methods <- function(dat, t_w, beta, eta, B = 5000)
 {
   n <- dat$Total_Number
   r <- dat$Number_of_Failures
   t_c <- dat$Censor_Time
   mles <- find_mle2_with_backup(dat)
-  list_mles_r <- generate_bootstrap_draws(dat)
+  list_mles_r <- generate_bootstrap_draws(dat, B)
   p_ast <- get_p_star(list_mles_r, t_w, t_c)
   p_astast <- get_p_starstar(list_mles_r, mles, t_w, t_c)
   
-  pb_mat <- matrix(nrow = 5, ncol = 4)
+  pb_mat <- matrix(nrow = 6, ncol = 4)
   
-  rownames(pb_mat) <- c("LRT", "Bootstrap", "GPQ", "Calibration", "C-LRT")
+  rownames(pb_mat) <- c("LRT", "Bootstrap", "GPQ", "Calibration", "C-LRT", "BC-LRT")
   colnames(pb_mat) <- c("Lower95", "Lower90", "Upper90", "Upper95")
 
   # likelihood ratio based prediction
-  LU95 <- lik_ratio_pred(0.9, dat, t_w)
-  LU90 <- lik_ratio_pred(0.8, dat, t_w)
-  pb_mat[1, c(1, 4)] <- LU95
-  pb_mat[1, c(2, 3)] <- LU90
+  pb_mat[1, c(1, 4)] <- lik_ratio_pred(0.9, dat, t_w)
+  pb_mat[1, c(2, 3)] <- lik_ratio_pred(0.8, dat, t_w)
   
   # bootstrap
   L95 <- boot_solve_discrete(0.05, p_ast, n-r)
@@ -433,7 +447,13 @@ prediction_five_methods <- function(dat, t_w, beta, eta)
   pb_mat[4,] <- cap
   
   # calibrated-likelihood ratio
-  pb_mat[5,] <- lik_ratio_pred_boot(dat, t_w, list_mles_r)
+  clr <- lik_ratio_pred_boot(dat, t_w, list_mles_r)
+  pb_mat[5,] <- clr$bounds
+
+  # bartlett_correction
+  emean <- clr$emean
+  pb_mat[6, c(1, 4)] <- lik_ratio_pred_bartlett_correct(0.9, dat, t_w, emean)
+  pb_mat[6, c(2, 3)] <- lik_ratio_pred_bartlett_correct(0.8, dat, t_w, emean)
 
   cp_mat <- pb2cp(pb_mat, t_c, t_w, beta, eta, n, r)
   
