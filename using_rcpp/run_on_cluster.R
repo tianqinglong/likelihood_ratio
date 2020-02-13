@@ -17,7 +17,7 @@ dat_list <- lapply(1:N, function(x)
   {generate_censored_data(r, pf1, beta, eta)})
 output <- mclapply(dat_list, function(x) {
   prediction_five_methods(x, qweibull(pf1+delta, beta, eta), beta, eta)
-}, mc.cores = 16)
+}, mc.cores = 6)
 
-saveRDS(output, file = paste("results/b",beta,"er", r,"p",pf1,"d",delta,".rds",sep=""))
+saveRDS(output, file = paste("temp/b",beta,"er", r,"p",pf1,"d",delta,".rds",sep=""))
 Sys.time() -t1

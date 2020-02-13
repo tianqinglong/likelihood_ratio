@@ -80,19 +80,27 @@ List bootstrap_sample(NumericVector mles, double t_c, int n)
 NumericVector generate_y_n(int r, int n, double t_c, double t_w, double beta_used, double eta_used, int number_of_y_n)
 {
   double p = (R::pweibull(t_w, beta_used, eta_used, true, false)-R::pweibull(t_c, beta_used, eta_used, true, false))/R::pweibull(t_c, beta_used, eta_used, false, false);
+  if (std::isnan(p))
+  {
+    p = 1;
+  }
   NumericVector y_n = Rcpp::rbinom(number_of_y_n, n-r, p);
 
   return y_n;
 }
 
-// double compute_p(double t_c, double t_w, double beta, double eta)
-// {
-//   double p;
-//   p = (R::pweibull(t_w, beta, eta, true, false)-R::pweibull(t_c, beta, eta, true, false))/R::pweibull(t_c, beta, eta, false, false);
-//   
-//   return p;
-// }
-// 
+// [[Rcpp::export]]
+double compute_p(double t_c, double t_w, double beta, double eta)
+{
+  double p;
+  p = (R::pweibull(t_w, beta, eta, true, false)-R::pweibull(t_c, beta, eta, true, false))/R::pweibull(t_c, beta, eta, false, false);
+  if (std::isnan(p))
+  {
+    p = 1;
+  }
+  return p;
+}
+
 //
 // double compute_p_starstar(double b, double e, double bh, double eh, double t_c, double t_w)
 // {
@@ -121,7 +129,6 @@ double pred_dist(int y, NumericVector p, int n)
   }
   
   pred = pred/B;
-  
   return pred;
 }
 
