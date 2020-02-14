@@ -140,7 +140,7 @@ lik_ratio_pred <- function(p, dat, t_w)
   }
   else
   {
-  	lwd <- 0
+  	lwb <- 0
   }
   
   if (eval_y(n-r, t_w, mles, dat) > qchisq(p, df = 1))
@@ -314,9 +314,8 @@ pred_root_empirical <- function(list_mles_r, mles, t_c, t_w, n, num_per_sample =
 	phat <- compute_p(t_c, t_w, mles[1], mles[2])
 	sapply(list_mles_r, function(x) {
 		p_star <- compute_p(t_c, t_w, x$MLEs[1], x$MLEs[2])
-
-    p_star <- ifelse(p_star > 1, 1, p_star)
-    p_star <- ifelse(p_star < 0, 0, p_star)
+		p_star <- ifelse(p_star > 1, 1, p_star)
+		p_star <- ifelse(p_star < 0, 0, p_star)
 
 		ystar <- rbinom(num_per_sample, n-x$R, phat)
 		u_array <- pbinom(ystar, n-x$R, p_star)
