@@ -283,13 +283,29 @@ lik_ratio_pred_boot <- function(dat, t_w, list_mles_r, num_of_samples = 50)
 
   qt <- quantile(ratio_emp, probs = c(0.8, 0.9))
   qch <- qt[1]
-  mid <- find_mid(qch, dat, t_w)
-  L90 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
-  U90 <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
+  mid <- tryCatch(find_mid(qch, dat, t_w), error = function(e) {-1})
+  if (mid < 0)
+  {
+	L90 <- NA
+	U90 <- NA
+  }
+  else
+  {
+	L90 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
+	U90 <- solve_discrete_root(qch, n-r, mid dat, mles, t_w)
+  } 
   qch <- qt[2]
-  mid <- find_mid(qch, dat, t_w)
-  L95 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
-  U95 <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
+  mid <- tryCatch(find_mid(qch, dat, t_w), error = function(e) {-1})
+  if (mid < 0)
+  {
+	L95 <- NA
+	U95 <- NA
+  }
+  else
+  {
+	L95 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
+	U95 <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
+  }
 
   return(list(bounds = c(L95, L90, U90, U95), emean = mean(ratio_emp)))
 }
