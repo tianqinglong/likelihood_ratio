@@ -317,9 +317,17 @@ lik_ratio_pred_bartlett_correct <- function(p, dat, t_w, emean)
   r <- dat[[1]]
   n <- dat[[4]]
   qch <- emean * qchisq(p, df = 1)
-  mid <- find_mid(qch, dat, t_w)
-  LB <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
-  UB <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
+  mid <- tryCatch(find_mid(qch, dat, t_w), error = function(e) {-1})
+  if (mid < 0)
+  {
+	LB <- NA
+	UB <- NA
+  }
+  else
+  {
+	LB <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
+	UB <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
+  }
 
   return(c(LB, UB))
 }
