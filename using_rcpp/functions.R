@@ -292,7 +292,7 @@ lik_ratio_pred_boot <- function(dat, t_w, list_mles_r, num_of_samples = 50)
   else
   {
 	L90 <- solve_discrete_root(qch, 0, mid, dat, mles, t_w)
-	U90 <- solve_discrete_root(qch, n-r, mid dat, mles, t_w)
+	U90 <- solve_discrete_root(qch, n-r, mid, dat, mles, t_w)
   } 
   qch <- qt[2]
   mid <- tryCatch(find_mid(qch, dat, t_w), error = function(e) {-1})
