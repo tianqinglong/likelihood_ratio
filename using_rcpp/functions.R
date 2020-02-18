@@ -281,7 +281,7 @@ lik_ratio_pred_boot <- function(dat, t_w, list_mles_r, num_of_samples = 50)
   mles <- find_mle2_with_backup(dat)
   ratio_emp <- generate_ratio_array(mles, t_c, t_w, n, list_mles_r, num_of_samples)
 
-  qt <- quantile(ratio_emp, probs = c(0.8, 0.9))
+  qt <- quantile(ratio_emp, probs = c(0.8, 0.9), na.rm = T)
   qch <- qt[1]
   mid <- tryCatch(find_mid(qch, dat, t_w), error = function(e) {-1})
   if (mid < 0)
@@ -480,5 +480,5 @@ prediction_six_methods <- function(dat, t_w, beta, eta, B = 5000)
 
   cp_mat <- pb2cp(pb_mat, t_c, t_w, beta, eta, n, r)
   
-  return(list(Prediction_Bounds = pb_mat, Coverage_Probability = cp_mat))
+  return(list(Prediction_Bounds = pb_mat, Coverage_Probability = cp_mat, Data = dat))
 }
