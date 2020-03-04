@@ -101,22 +101,6 @@ double compute_p(double t_c, double t_w, double beta, double eta)
   return p;
 }
 
-//
-// double compute_p_starstar(double b, double e, double bh, double eh, double t_c, double t_w)
-// {
-//   double mle_mu = log(e), mle_sigma = 1/b;
-//   double bt_mu = log(eh), bt_sigma = 1/bh;
-//   
-//   double gpq_beta = 1/(pow(mle_sigma, 2)/bt_sigma);
-//   double gpq_eta = exp(mle_mu+(mle_mu-bt_mu)/bt_sigma*mle_sigma);
-//   
-//   double p_starstar;
-//   
-//   p_starstar = compute_p(t_c, t_w, gpq_beta, gpq_eta);
-//   
-//   return p_starstar;
-// }
-
 // [[Rcpp::export]]
 double pred_dist(int y, NumericVector p, int n)
 {
