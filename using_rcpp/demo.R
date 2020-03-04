@@ -1,4 +1,4 @@
-# source("functions.R")
+source("functions.R")
 
 r <- 30
 pf1 <- 0.1
@@ -75,6 +75,23 @@ t_w <- qweibull(pf2, beta, eta)
 
 mles <- find_mle2_with_backup(dat)
 list_mles_r <- generate_bootstrap_draws(dat, 1500)
-get_p_star(list_mles_r, t_w, t_c)
+p_star_array <- get_p_star(list_mles_r, t_w, t_c)
+p_starstar_array <- get_p_starstar(list_mles_r, mles, t_w, t_c)
+
+
 
 prediction_five_methods(dat, t_w, beta, eta)
+
+one_sample <- b4er3p0.01d0.2[[18]]
+one_sample
+
+beta <- 4
+eta <- 1
+er <- 3
+pf1 <- 0.01
+delta <- 0.2
+t_c <- qweibull(pf1, beta, eta, 1)
+t_w <- qweibull(pf1+delta, beta, eta, 1)
+
+pp <- (qweibull(pf1+delta, beta, 1)-qweibull(pf1, beta, 1))/qweibull(pf1, beta, 1, lower.tail = FALSE)
+qbinom(0.9, 300-2, pp)
