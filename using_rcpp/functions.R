@@ -349,7 +349,7 @@ pred_root_empirical <- function(list_mles_r, mles, t_c, t_w, n, num_per_sample =
 	) -> u_emp
 
 	u_emp <- as.vector(u_emp)
-	four_quantile <- quantile(u_emp, probs = c(0.05, 0.1, 0.9, 0.95))
+	four_quantile <- quantile(u_emp, probs = c(0.05, 0.1, 0.9, 0.95), na.rm = T)
 
 	return(four_quantile)
 }
