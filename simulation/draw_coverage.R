@@ -14,11 +14,17 @@ parse_filename <- function(filename)
 merge_conditional_cp <- function(list_of_results)
 {
   mat <- list_of_results[[1]]$Coverage_Probability
+  index <- 1
   for (i in 2:length(list_of_results))
   {
-    mat <- mat + list_of_results[[i]]$Coverage_Probability
+    if(class(list_of_results[[i]]) != "try-error")
+    {
+      mat <- mat + list_of_results[[i]]$Coverage_Probability
+      index <- index + 1
+    }
   }
-  mat <- mat/length(list_of_results)
+
+  mat <- mat/index
   
   cp_df <- reshape2::melt(mat)
   names(cp_df) <- c("Method", "Quantile", "Coverage")
@@ -59,7 +65,7 @@ names(Pf1.lab) <- c("Pf1 = 0.01", "Pf1 = 0.05", "Pf1 = 0.1", "Pf1 = 0.2")
 
 plot.function <- function(cp_df, b, d)
 {
-  cp_df %>% filter( Beta == b, Delta == d) %>% 
+  cp_df %>% filter( Beta == b, Delta == d, Er!= 10, Method %in% c("LRT", "C-LRT", "BC-LRT")) %>% 
     ggplot(aes(x = Er, y = Coverage, col = Method))+
     geom_point(aes(shape = Method), alpha = 0.75)+
     geom_line(alpha = 0.75)+
@@ -71,7 +77,7 @@ plot.function <- function(cp_df, b, d)
 }
 
 # 
-setwd("./data/")
+setwd("./big_er/")
 file_list <- list.files()
 cp_df <- NULL
 for (filename in file_list)
@@ -80,7 +86,7 @@ for (filename in file_list)
 }
 cp_df$Pf1 <- factor(cp_df$Pf1, levels = c(0.01, 0.05, 0.1, 0.2), labels = c("Pf1 = 0.01","Pf1 = 0.05","Pf1 = 0.1","Pf1 = 0.2" ))
 
-pdf("../four_methods_coverage.pdf",width = 11.69, height = 8.27)
+pdf("../four_methods_coverage_1.pdf",width = 11.69, height = 8.27)
 plot.function(cp_df, 2, 0.1)
 plot.function(cp_df, 2, 0.2)
 plot.function(cp_df, 4, 0.1)

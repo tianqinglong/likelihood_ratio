@@ -428,6 +428,55 @@ prediction_four_methods <- function(dat, t_w, beta, eta)
   return(list(Prediction_Bounds = pb_mat, Coverage_Probability = cp_mat))
 }
 
+# to fix the supplementary of main paper
+prediction_main_paper <- function(dat, t_w, beta, eta, B = 5000)
+{
+  n <- dat$Total_Number
+  r <- dat$Number_of_Failures
+  t_c <- dat$Censor_Time
+  mles <- find_mle2_with_backup(dat)
+  list_mles_r <- generate_bootstrap_draws(dat, B)
+  p_ast <- get_p_star(list_mles_r, t_w, t_c)
+  p_astast <- get_p_starstar(list_mles_r, mles, t_w, t_c)
+  
+  pb_mat <- matrix(nrow = 4, ncol = 4)
+  rownames(pb_mat) <- c("Bootstrap", "GPQ", "Calibration", "Plug-in")
+  colnames(pb_mat) <- c("Lower95", "Lower90", "Upper90", "Upper95")
+  
+  # bootstrap
+  L95 <- boot_solve_discrete(0.05, p_ast, n-r)
+  L90 <- boot_solve_discrete(0.1, p_ast, n-r)
+  U90 <- boot_solve_discrete(0.9, p_ast, n-r)
+  U95 <- boot_solve_discrete(0.95, p_ast, n-r)
+  pb_mat[1,] <- c(L95, L90, U90, U95)
+  
+  # gpq
+  L95 <- boot_solve_discrete(0.05, p_astast, n-r)
+  L90 <- boot_solve_discrete(0.1, p_astast, n-r)
+  U90 <- boot_solve_discrete(0.9, p_astast, n-r)
+  U95 <- boot_solve_discrete(0.95, p_astast, n-r)
+  pb_mat[2,] <- c(L95, L90, U90, U95)
+  
+  # calibration
+  alpha_cali <- pred_root_empirical(list_mles_r, mles, t_c, t_w, n)
+  cap <- qbinom(alpha_cali, n-r, compute_p(t_c, t_w, mles[1], mles[2]))
+  cap[1] <- max(0, cap[1]-1)
+  cap[2] <- max(0, cap[2]-1)
+  pb_mat[3,] <- cap
+  
+  # plug-in
+  p_hat <- compute_p(t_c, t_w, mles[1], mles[2])
+  L95 <- qbinom(0.05, n-r, p_hat)
+  L90 <- qbinom(0.1, n-r, p_hat)
+  U90 <- qbinom(0.9, n-r, p_hat)
+  U95 <- qbinom(0.95, n-r, p_hat)
+  pb_mat[4,] <- c(L95, L90, U90, U95)
+  
+  cp_mat <- pb2cp(pb_mat, t_c, t_w, beta, eta, n, r)
+  
+  return(list(Prediction_Bounds = pb_mat, Coverage_Probability = cp_mat))
+}
+
 # add the calibrated likelihood method
 prediction_six_methods <- function(dat, t_w, beta, eta, B = 5000)
 {
