@@ -25,9 +25,26 @@ merge_conditional_cp <- function(list_of_results)
   return(cp_df)
 }
 
-make_data_frame <- function(filename)
+filter_the_results <- function(filename)
 {
   list_of_results <- readRDS(filename)
+  good_list <- vector(mode = "list", length = 0)
+  for (i in 1:length(list_of_results))
+  {
+    the_result <- list_of_results[[i]]
+    if (class(the_result) == "try-error") {next}
+    
+    if (any(is.na(the_result$Coverage_Probability))) {next}
+    
+    good_list <- c(good_list, list_of_results[i])
+  }
+  
+  return(good_list)
+}
+
+make_data_frame <- function(filename)
+{
+  list_of_results <- filter_the_results(filename)
   cp_df <- merge_conditional_cp(list_of_results)
   info_vec <- parse_filename(filename)
   
@@ -54,8 +71,8 @@ make_data_frame <- function(filename)
   return(cp_df)
 }
 
-Pf1.lab <- c(0.01, 0.05, 0.1, 0.2)
-names(Pf1.lab) <- c("Pf1 = 0.01", "Pf1 = 0.05", "Pf1 = 0.1", "Pf1 = 0.2")
+Pf1.lab <- c(0.05, 0.1, 0.2)
+names(Pf1.lab) <- c("Pf1 = 0.05", "Pf1 = 0.1", "Pf1 = 0.2")
 
 plot.function <- function(cp_df, b, d)
 {
@@ -71,14 +88,14 @@ plot.function <- function(cp_df, b, d)
 }
 
 # 
-setwd("./data/")
+setwd("./output/")
 file_list <- list.files()
 cp_df <- NULL
 for (filename in file_list)
 {
   cp_df <- rbind(cp_df, make_data_frame(filename))
 }
-cp_df$Pf1 <- factor(cp_df$Pf1, levels = c(0.01, 0.05, 0.1, 0.2), labels = c("Pf1 = 0.01","Pf1 = 0.05","Pf1 = 0.1","Pf1 = 0.2" ))
+cp_df$Pf1 <- factor(cp_df$Pf1, levels = c(0.05, 0.1, 0.2), labels = c("Pf1 = 0.05","Pf1 = 0.1","Pf1 = 0.2" ))
 
 pdf("../four_methods_coverage.pdf",width = 11.69, height = 8.27)
 plot.function(cp_df, 2, 0.1)
