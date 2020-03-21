@@ -91,8 +91,10 @@ eta <- 1
 er <- 3
 pf1 <- 0.01
 delta <- 0.2
-t_c <- qweibull(pf1, beta, eta, 1)
-t_w <- qweibull(pf1+delta, beta, eta, 1)
+t_c <- qweibull(pf1, beta, eta)
+t_w <- qweibull(pf1+delta, beta, eta)
+
+list_mles_r
 
 pp <- (qweibull(pf1+delta, beta, 1)-qweibull(pf1, beta, 1))/qweibull(pf1, beta, 1, lower.tail = FALSE)
 qbinom(0.9, 300-2, pp)
